@@ -1,9 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const mysqlStore = require('express-mysql-session')(session);
 const passport = require('passport');
 const flash = require('connect-flash');
-const promisify = require('es6-promisify');
 const helpers = require('./helpers');
 const handlers = require('./handlers');
 
@@ -17,13 +18,22 @@ module.exports = (app) => {
 	// Takes the raw requests and turns them into usable properties on req.body
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: true }));
+	// Provides access to cookies that came in request
+	app.use(cookieParser());
 	// Sessions allow us to store data on visitors from request to request
 	// This keeps users logged in and allows us to send flash messages
 	app.use(session({
 		secret: process.env.SECRET,
 		key: process.env.KEY,
 		resave: false,
-		saveUninitialized: false
+		saveUninitialized: false,
+		store: new mysqlStore({
+			host: process.env.DB_HOST,
+			port: process.env.DB_PORT,
+			user: process.env.DB_USER,
+			password: process.env.DB_PASS,
+			database: process.env.DB_NAME
+		})
 	}));
 	// Use PassportJS to handle logins
 	app.use(passport.initialize());
